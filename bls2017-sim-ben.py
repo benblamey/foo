@@ -40,16 +40,13 @@ import tensorflow_datasets as tfds
 import tensorflow_compression as tfc
 from tensorflow.keras.callbacks import CSVLogger
 
+#
+import cp_features
+from importlib import reload
+reload(cp_features)
+import cp_features
 
-# for cellprofiler
-import cellprofiler_core.pipeline
-import cellprofiler_core.preferences
-import cellprofiler_core.utilities.java
-import pathlib
-import os
 
-import pandas as pd
-from sklearn.metrics.pairwise import cosine_similarity
 
 tf.config.run_functions_eagerly(True)
 
@@ -64,6 +61,9 @@ def write_png(filename, image):
     """Saves an image to a PNG file."""
     string = tf.image.encode_png(image)
     tf.io.write_file(filename, string)
+
+
+
 
 
 class AnalysisTransform(tf.keras.Sequential):
@@ -144,42 +144,7 @@ class BLS2017Model(tf.keras.Model):
             write_png('/data/image/original_{}.png'.format(i), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png('/data/image/decoded_{}.png'.format(i), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
-        # Cellprofiler feature loss
-        cellprofiler_core.preferences.set_headless()
-        cellprofiler_core.utilities.java.start_java()
-        # os.makedirs('cp/image', exist_ok=True)
-        cp_output = 'output'
-        os.makedirs(cp_output, exist_ok=True)
-
-        pipeline = cellprofiler_core.pipeline.Pipeline()
-        pipeline.load("ExampleNeighbors.cppipe")
-        cellprofiler_core.preferences.set_default_output_directory(cp_output)
-        print(pathlib.Path('.').absolute())
-        file_list = list(pathlib.Path('.').absolute().glob('image/*.png'))
-        print(file_list)
-        files = [file.as_uri() for file in file_list]
-        if len(files) > 0:
-            pipeline.read_file_list(files)
-            output_measurements = pipeline.run()
-            cp_df = pd.read_csv("output/Image.csv")
-            cp_df_sim = cp_df.filter(regex='^Count|^Mean|URL_Original', axis=1)
-            # tf.print('running here')
-
-            # cellprofiler feature similarity
-            res = []
-            for i in range(8):
-                decoded_num = cp_df_sim.loc[i, 'URL_Original'].replace('.', '_').split('_')[-2]
-                original_num = cp_df_sim.loc[i + 8, 'URL_Original'].replace('.', '_').split('_')[-2]
-                if decoded_num == original_num:
-                    res.append(cosine_similarity([cp_df_sim.iloc[i, :-1]], [cp_df_sim.iloc[i + 8, :-1]])[0][0])
-                else:
-                    print('the original and decoded image numbers for similarity calculation should match.')
-
-            sim = tf.reduce_mean(res)
-            # tf.print('running here')
-            # tf.print(sim)
-
-            # tf.print(files)
+        sim = cp_features.cp_features()
         # cellprofiler_core.utilities.java.stop_java()
 
         # Total number of bits divided by total number of pixels.
@@ -206,7 +171,6 @@ class BLS2017Model(tf.keras.Model):
         # self.count += 1
 
         return loss, bpp, mse, sim
-
 
     # @tf.autograph.experimental.do_not_convert
     def train_step(self, x):
