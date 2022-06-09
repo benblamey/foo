@@ -1,0 +1,29 @@
+ssh-keygen -t rsa
+
+# this doesnt work
+#/usr/sbin/sshd -D
+
+cat .ssh/id_rsa.pub >> .ssh/authorized_keys
+
+sudo /etc/init.d/ssh start
+
+sudo kubectl port-forward pod/ben-notebook-nogpu-7bc87c5549-jn4l5 22:22
+sudo kubectl port-forward pod/notebook 22:22
+
+ssh jovyan@localhost -i ~/.ssh/id_rsa_notebook
+ssh root@localhost -i ~/.ssh/id_rsa_notebook
+
+
+---
+for anders pods:
+sudo unminimize
+
+---
+for my own pod:
+sudo apt install openssh-server
+
+?? not needed?
+systemctl enable ssh
+
+
+pip3 install --upgrade keras==2.8.0rc0
