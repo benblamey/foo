@@ -35,23 +35,22 @@ def cp_features():
     files = [file.as_uri() for file in file_list]
 
     if len(files) > 0:
-        if False:
-            output_pandas = []
-            for i, file in enumerate(files):
-                output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
-                print(output_dir)
-                shutil.rmtree(output_dir, ignore_errors=True)
-                os.makedirs(output_dir)
-                cellprofiler_core.preferences.set_default_output_directory(output_dir)
-                # clear file list
-                _pipeline.clear_urls()
-                _pipeline.read_file_list([file])
-                output_measurements = _pipeline.run()
-                output_pandas.append(pd.read_csv(os.path.join(output_dir, "Image.csv")))
+        output_pandas = []
+        for i, file in enumerate(files):
+            output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
+            print(output_dir)
+            shutil.rmtree(output_dir, ignore_errors=True)
+            os.makedirs(output_dir)
+            cellprofiler_core.preferences.set_default_output_directory(output_dir)
+            # clear file list
+            _pipeline.clear_urls()
+            _pipeline.read_file_list([file])
+            output_measurements = _pipeline.run()
+            output_pandas.append(os.path.join(output_dir, "Image.csv"))
 
         #_pipeline.read_file_list(files)
         #output_measurements = _pipeline.run()
-        sim = _read_data()
+        sim = _read_data(output_pandas)
 
         # tf.print('running here')
         # tf.print(sim)
@@ -60,8 +59,9 @@ def cp_features():
     return sim
 
 
-def _read_data():
-    cp_df = pd.read_csv("output/Image.csv")
+def _read_data(output_pandas):
+    #cp_df = pd.read_csv("output/Image.csv")
+    cp_df = pd.concat([pd.read_csv(filename) for filename in output_pandas])
     cp_df_sim = cp_df.filter(regex='^Count|^Mean|URL_Original', axis=1)
     # tf.print('running here')
     # cellprofiler feature similarity
@@ -80,4 +80,6 @@ def _read_data():
 
 if __name__ == '__main__':
     #cp_features()
-    _read_data()
+    filenames = [f'output/{i}/Image.csv' for i in range(16)]
+    print(filenames)
+    _read_data(filenames)
