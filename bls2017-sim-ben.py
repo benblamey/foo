@@ -118,7 +118,6 @@ class BLS2017Model(tf.keras.Model):
     # @tf.autograph.experimental.do_not_convert
     # @tf.function
     def call(self, x, training):
-        start = time.time()
 
         """Computes rate and distortion losses."""
 
@@ -140,7 +139,10 @@ class BLS2017Model(tf.keras.Model):
             write_png('/data/image/original_{}.png'.format(i), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png('/data/image/decoded_{}.png'.format(i), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
+        start = time.time()
         sim = cp_features.cp_features()
+        print(f'cp_features took {time.time() - start}s wall time.')
+
         # cellprofiler_core.utilities.java.stop_java()
 
         # Total number of bits divided by total number of pixels.
@@ -166,7 +168,6 @@ class BLS2017Model(tf.keras.Model):
         # tf.print('Count: ' + str(self.count))
         # self.count += 1
 
-        print(f'call(..) took {time.time() - start}s wall time.')
 
         return loss, bpp, mse, sim
 
