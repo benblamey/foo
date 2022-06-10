@@ -1,0 +1,83 @@
+import pathlib
+import os
+import shutil
+
+import pandas as pd
+from sklearn.metrics.pairwise import cosine_similarity
+import tensorflow as tf
+
+if __name__ != '__main__':
+    import cellprofiler_core.pipeline
+    import cellprofiler_core.preferences
+    import cellprofiler_core.utilities.java
+
+_pipeline = None
+CP_OUTPUT_DIR = 'output'
+
+def cp_features():
+    global _pipeline
+    if _pipeline is None:
+        # Cellprofiler feature loss
+        cellprofiler_core.preferences.set_headless()
+        cellprofiler_core.utilities.java.start_java()
+        # os.makedirs('cp/image', exist_ok=True)
+
+        os.makedirs(CP_OUTPUT_DIR, exist_ok=True)
+
+        _pipeline = cellprofiler_core.pipeline.Pipeline()
+        _pipeline.load("ExampleNeighbors.cppipe")
+
+        cellprofiler_core.preferences.set_default_output_directory(CP_OUTPUT_DIR)
+
+    print(pathlib.Path('.').absolute())
+    file_list = list(pathlib.Path('.').absolute().glob('image/*.png'))
+    print(file_list)
+    files = [file.as_uri() for file in file_list]
+
+    if len(files) > 0:
+        if False:
+            output_pandas = []
+            for i, file in enumerate(files):
+                output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
+                print(output_dir)
+                shutil.rmtree(output_dir, ignore_errors=True)
+                os.makedirs(output_dir)
+                cellprofiler_core.preferences.set_default_output_directory(output_dir)
+                # clear file list
+                _pipeline.clear_urls()
+                _pipeline.read_file_list([file])
+                output_measurements = _pipeline.run()
+                output_pandas.append(pd.read_csv(os.path.join(output_dir, "Image.csv")))
+
+        #_pipeline.read_file_list(files)
+        #output_measurements = _pipeline.run()
+        sim = _read_data()
+
+        # tf.print('running here')
+        # tf.print(sim)
+
+        # tf.print(files)
+    return sim
+
+
+def _read_data():
+    cp_df = pd.read_csv("output/Image.csv")
+    cp_df_sim = cp_df.filter(regex='^Count|^Mean|URL_Original', axis=1)
+    # tf.print('running here')
+    # cellprofiler feature similarity
+    res = []
+
+    # relies on tha fact that the images are ordered into 2 consecutive lists, so that orig and decoded pairs have fixed offset.
+    for i in range(8):
+        decoded_num = cp_df_sim.loc[i, 'URL_Original'].replace('.', '_').split('_')[-2]
+        original_num = cp_df_sim.loc[i + 8, 'URL_Original'].replace('.', '_').split('_')[-2]
+        if decoded_num == original_num:
+            res.append(cosine_similarity([cp_df_sim.iloc[i, :-1]], [cp_df_sim.iloc[i + 8, :-1]])[0][0])
+        else:
+            print('the original and decoded image numbers for similarity calculation should match.')
+    sim = tf.reduce_mean(res)
+    return sim
+
+if __name__ == '__main__':
+    #cp_features()
+    _read_data()

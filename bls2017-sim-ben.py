@@ -40,16 +40,13 @@ import tensorflow_datasets as tfds
 import tensorflow_compression as tfc
 from tensorflow.keras.callbacks import CSVLogger
 
-#
-import cp_features
 from importlib import reload
+import cp_features
+# ensure latest code is run when working with notebook
 reload(cp_features)
 import cp_features
 
-
-
 tf.config.run_functions_eagerly(True)
-
 
 def read_png(filename):
     """Loads a PNG image file."""
@@ -61,10 +58,6 @@ def write_png(filename, image):
     """Saves an image to a PNG file."""
     string = tf.image.encode_png(image)
     tf.io.write_file(filename, string)
-
-
-
-
 
 class AnalysisTransform(tf.keras.Sequential):
     """The analysis transform."""
