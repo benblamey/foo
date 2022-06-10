@@ -16,7 +16,7 @@ CP_OUTPUT_DIR = 'output'
 
 import subprocess
 procs = []
-if False:
+if True:
     procs = [subprocess.Popen(["python3","cp_worker_core.py"],
                               stdout=subprocess.PIPE,
                               stdin=subprocess.PIPE,
@@ -46,18 +46,19 @@ def cp_features():
     if len(files) > 0:
         output_pandas = []
         for i, file in enumerate(files):
+            proc = procs[i]
             output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
             output_pandas.append(os.path.join(output_dir, "Image.csv"))
             print(output_dir)
 
-            if False:
-                proc = procs[i]
-                proc.stdin.write(f'{file},{output_dir}\n')
-                proc.stdin.flush()
+            proc.stdin.write(f'{file},{output_dir}\n')
+            proc.stdin.flush()
 
-                # Read one line of output.
-                data = proc.stdout.readline()
-                print(data)
+        for i, file in enumerate(files):
+            # Read one line of output.
+            proc = procs[i]
+            data = proc.stdout.readline()
+            print(data)
 
 
             # shutil.rmtree(output_dir, ignore_errors=True)
