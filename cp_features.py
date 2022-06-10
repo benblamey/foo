@@ -15,10 +15,12 @@ _pipeline = None
 CP_OUTPUT_DIR = 'output'
 
 import subprocess
-proc = subprocess.Popen(["python3","cp_worker_core.py"],
-                      stdout=subprocess.PIPE,
-                      stdin=subprocess.PIPE,
-                      text=True)
+procs = []
+if False:
+    procs = [subprocess.Popen(["python3","cp_worker_core.py"],
+                              stdout=subprocess.PIPE,
+                              stdin=subprocess.PIPE,
+                              text=True) for i in range(16)]
 
 
 def cp_features():
@@ -45,13 +47,17 @@ def cp_features():
         output_pandas = []
         for i, file in enumerate(files):
             output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
+            output_pandas.append(os.path.join(output_dir, "Image.csv"))
             print(output_dir)
-            proc.stdin.write(f'{file},{output_dir}\n')
-            proc.stdin.flush()
 
-            # Read one line of output.
-            data = proc.stdout.readline()
-            print(data)
+            if False:
+                proc = procs[i]
+                proc.stdin.write(f'{file},{output_dir}\n')
+                proc.stdin.flush()
+
+                # Read one line of output.
+                data = proc.stdout.readline()
+                print(data)
 
 
             # shutil.rmtree(output_dir, ignore_errors=True)
@@ -61,7 +67,7 @@ def cp_features():
             # _pipeline.clear_urls()
             # _pipeline.read_file_list([file])
             # output_measurements = _pipeline.run()
-            # output_pandas.append(os.path.join(output_dir, "Image.csv"))
+
 
         #_pipeline.read_file_list(files)
         #output_measurements = _pipeline.run()
@@ -83,11 +89,11 @@ def _read_data(output_pandas):
     res = []
 
     # relies on tha fact that the images are ordered into 2 consecutive lists, so that orig and decoded pairs have fixed offset.
-    for i in range(8):
-        decoded_num = cp_df_sim.loc[i, 'URL_Original'].replace('.', '_').split('_')[-2]
-        original_num = cp_df_sim.loc[i + 8, 'URL_Original'].replace('.', '_').split('_')[-2]
+    for i in range(0,8,2):
+        decoded_num = cp_df_sim.iloc[i]['URL_Original'].replace('.', '_').split('_')[-2]
+        original_num = cp_df_sim.iloc[i + 1]['URL_Original'].replace('.', '_').split('_')[-2]
         if decoded_num == original_num:
-            res.append(cosine_similarity([cp_df_sim.iloc[i, :-1]], [cp_df_sim.iloc[i + 8, :-1]])[0][0])
+            res.append(cosine_similarity([cp_df_sim.iloc[i, :-1]], [cp_df_sim.iloc[i + 1, :-1]])[0][0])
         else:
             print('the original and decoded image numbers for similarity calculation should match.')
     sim = tf.reduce_mean(res)

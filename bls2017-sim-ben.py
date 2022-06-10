@@ -39,6 +39,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 import tensorflow_compression as tfc
 from tensorflow.keras.callbacks import CSVLogger
+import time
 
 from importlib import reload
 import cp_features
@@ -117,6 +118,8 @@ class BLS2017Model(tf.keras.Model):
     # @tf.autograph.experimental.do_not_convert
     # @tf.function
     def call(self, x, training):
+        start = time.time()
+
         """Computes rate and distortion losses."""
 
         # First time this is called, x is none
@@ -131,9 +134,9 @@ class BLS2017Model(tf.keras.Model):
 
         for i in range(8):
             # tf.print('saving')
-            print('writing file' + str(i))
-            print('/data/image/original_{}.png'.format(i))
-            print(tf.dtypes.cast(x[i, :, :, :], tf.uint8))
+            #print('writing file' + str(i))
+            #print('/data/image/original_{}.png'.format(i))
+            #print(tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png('/data/image/original_{}.png'.format(i), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png('/data/image/decoded_{}.png'.format(i), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
@@ -150,7 +153,7 @@ class BLS2017Model(tf.keras.Model):
 
         # The rate-distortion Lagrangian.
         loss = bpp + self.lmbda * mse - sim
-        print(loss)
+        #print(loss)
 
         # tf.print(x.shape)
         # # global count
@@ -162,6 +165,8 @@ class BLS2017Model(tf.keras.Model):
         # tf.print('Count: ' + str(self.lmbda))
         # tf.print('Count: ' + str(self.count))
         # self.count += 1
+
+        print(f'call(..) took {time.time() - start}s wall time.')
 
         return loss, bpp, mse, sim
 
@@ -553,3 +558,6 @@ if __name__ == "__main__":
                 '--epochs', '10']
 
     app.run(main, flags_parser=parse_args)
+
+    for proc in cp_features.procs:
+        proc.kill()
