@@ -23,7 +23,7 @@ if True:
                               text=True) for i in range(16)]
 
 
-def cp_features():
+def cp_features(file_list):
     # global _pipeline
     # if _pipeline is None:
     #     # Cellprofiler feature loss
@@ -39,7 +39,6 @@ def cp_features():
     #     cellprofiler_core.preferences.set_default_output_directory(CP_OUTPUT_DIR)
 
     print(pathlib.Path('.').absolute())
-    file_list = list(pathlib.Path('.').absolute().glob('image/*.png'))
     print(file_list)
     files = [file.as_uri() for file in file_list]
 
@@ -57,7 +56,7 @@ def cp_features():
         for i, file in enumerate(files):
             # Read one line of output.
             proc = procs[i]
-            data = proc.stdout.readline()
+            data = proc.stdout.readline().strip()
             print(data)
 
 

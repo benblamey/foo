@@ -32,6 +32,8 @@ This script requires TFC v2 (`pip install tensorflow-compression==2.*`).
 
 import argparse
 import glob
+import os.path
+import pathlib
 import sys
 from absl import app
 from absl.flags import argparse_flags
@@ -46,6 +48,8 @@ import cp_features
 # ensure latest code is run when working with notebook
 reload(cp_features)
 import cp_features
+
+IMAGE_DIR_RELATIVE = 'image'
 
 tf.config.run_functions_eagerly(True)
 
@@ -136,11 +140,12 @@ class BLS2017Model(tf.keras.Model):
             #print('writing file' + str(i))
             #print('/data/image/original_{}.png'.format(i))
             #print(tf.dtypes.cast(x[i, :, :, :], tf.uint8))
-            write_png('/data/image/original_{}.png'.format(i), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
-            write_png('/data/image/decoded_{}.png'.format(i), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
+            write_png(os.path.join(IMAGE_DIR_RELATIVE, 'original_{}.png'.format(i)), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
+            write_png(os.path.join(IMAGE_DIR_RELATIVE, 'decoded_{}.png'.format(i)), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
         start = time.time()
-        sim = cp_features.cp_features()
+        file_list = list(pathlib.Path('.').absolute().glob(os.path.join(IMAGE_DIR_RELATIVE, '*.png')))
+        sim = cp_features.cp_features(file_list)
         print(f'cp_features took {time.time() - start}s wall time.')
 
         # cellprofiler_core.utilities.java.stop_java()
@@ -301,7 +306,6 @@ def get_dataset(name, split, args):
 
 
 def get_custom_dataset(split, args):
-    print('get_custom_datase')
     """Creates input data pipeline from custom PNG images."""
     with tf.device("/cpu:0"):
         files = glob.glob(args.train_glob)
