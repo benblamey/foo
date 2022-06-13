@@ -44,20 +44,22 @@ def cp_features(file_list):
 
     if len(files) > 0:
         output_pandas = []
-        for i, file in enumerate(files):
+        for i, file_path in enumerate(files):
             proc = procs[i]
             output_dir = os.path.join(CP_OUTPUT_DIR, str(i))
             output_pandas.append(os.path.join(output_dir, "Image.csv"))
+            allow_cache = 'original' in file_path
+
             print(output_dir)
 
-            proc.stdin.write(f'{file},{output_dir}\n')
+            proc.stdin.write(f'{file_path},{output_dir},{allow_cache}\n')
             proc.stdin.flush()
 
-        for i, file in enumerate(files):
+        for i, file_path in enumerate(files):
             # Read one line of output.
             proc = procs[i]
             data = proc.stdout.readline().strip()
-            print(data)
+            #print(data)
 
 
             # shutil.rmtree(output_dir, ignore_errors=True)

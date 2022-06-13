@@ -1,3 +1,4 @@
+import hashlib
 import sys
 import pathlib
 import os
@@ -6,15 +7,23 @@ import cellprofiler_core.pipeline
 import cellprofiler_core.preferences
 import cellprofiler_core.utilities.java
 
+PIPELINE = "ExampleNeighbors.cppipe"
+
 cellprofiler_core.preferences.set_headless()
 cellprofiler_core.utilities.java.start_java()
 
 _pipeline = cellprofiler_core.pipeline.Pipeline()
-_pipeline.load("ExampleNeighbors.cppipe")
+_pipeline.load(PIPELINE)
+
+# cache_dir = os.path.join(".cp_worker_core", PIPELINE)
+# os.makedirs(cache_dir, exist_ok=True)
+
 
 while True:
     line = sys.stdin.readline().rstrip()
-    input_file, output_dir = line.split(",")
+    input_file, output_dir, allow_cache = line.split(",")
+
+    # TODO: implement caching.
 
     shutil.rmtree(output_dir, ignore_errors=True)
     os.makedirs(output_dir)
