@@ -122,7 +122,7 @@ class BLS2017Model(tf.keras.Model):
     # @tf.autograph.experimental.do_not_convert
     # @tf.function
     def call(self, x, training):
-
+        time_start_call = time.time()
         """Computes rate and distortion losses."""
 
         # First time this is called, x is none
@@ -135,6 +135,8 @@ class BLS2017Model(tf.keras.Model):
         y_hat, bits = entropy_model(y, training=training)
         x_hat = self.synthesis_transform(y_hat)
 
+        print(f'call() getting here took {time.time() - time_start_call}s wall time.')
+
         for i in range(8):
             # tf.print('saving')
             #print('writing file' + str(i))
@@ -143,10 +145,10 @@ class BLS2017Model(tf.keras.Model):
             write_png(os.path.join(IMAGE_DIR_RELATIVE, 'original_{}.png'.format(i)), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png(os.path.join(IMAGE_DIR_RELATIVE, 'decoded_{}.png'.format(i)), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
-        start = time.time()
-        file_list = list(pathlib.Path('.').absolute().glob(os.path.join(IMAGE_DIR_RELATIVE, '*.png')))
-        sim = cp_features.cp_features(file_list)
-        print(f'cp_features took {time.time() - start}s wall time.')
+        file_uri_list = list(pathlib.Path('.').absolute().glob(os.path.join(IMAGE_DIR_RELATIVE, '*.png')))
+        time_start_cp = time.time()
+        sim = cp_features.cp_features(file_uri_list)
+        print(f'cp_features took {time.time() - time_start_cp}s wall time.')
 
         # cellprofiler_core.utilities.java.stop_java()
 
@@ -173,6 +175,7 @@ class BLS2017Model(tf.keras.Model):
         # tf.print('Count: ' + str(self.count))
         # self.count += 1
 
+        print(f'call() took {time.time() - time_start_call}s wall time.')
 
         return loss, bpp, mse, sim
 
@@ -221,10 +224,8 @@ class BLS2017Model(tf.keras.Model):
         self.sim.update_state(sim)
         return {m.name: m.result() for m in [self.loss, self.bpp, self.mse, self.sim]}
 
-
     def predict_step(self, x):
         raise NotImplementedError("Prediction API is not supported.")
-
 
     def compile(self, **kwargs):
         super().compile(
@@ -239,7 +240,6 @@ class BLS2017Model(tf.keras.Model):
         self.mse = tf.keras.metrics.Mean(name="mse")
         self.sim = tf.keras.metrics.Mean(name="sim")
 
-
     def fit(self, *args, **kwargs):
         # global count
         # print('Count: ' + str(count))
@@ -249,7 +249,6 @@ class BLS2017Model(tf.keras.Model):
         self.entropy_model = tfc.ContinuousBatchedEntropyModel(
             self.prior, coding_rank=3, compression=True)
         return retval
-
 
     @tf.function(input_signature=[
         tf.TensorSpec(shape=(None, None, 3), dtype=tf.uint8),
@@ -264,7 +263,6 @@ class BLS2017Model(tf.keras.Model):
         x_shape = tf.shape(x)[1:-1]
         y_shape = tf.shape(y)[1:-1]
         return self.entropy_model.compress(y), x_shape, y_shape
-
 
     @tf.function(input_signature=[
         tf.TensorSpec(shape=(1,), dtype=tf.string),
@@ -309,7 +307,6 @@ def get_custom_dataset(split, args):
     """Creates input data pipeline from custom PNG images."""
     with tf.device("/cpu:0"):
         files = glob.glob(args.train_glob)
-        #print(files)
         if not files:
             raise RuntimeError(f"No training images found with glob "
                                f"'{args.train_glob}'.")
@@ -323,13 +320,9 @@ def get_custom_dataset(split, args):
         dataset = dataset.batch(args.batchsize, drop_remainder=True)
     return dataset
 
-
 csv_log = CSVLogger("results.csv")
 
-
 def train(args):
-    print('train')
-    print(args)
     """Instantiates and trains the model."""
     if args.precision_policy:
         tf.keras.mixed_precision.set_global_policy(args.precision_policy)
@@ -350,8 +343,6 @@ def train(args):
         train_dataset = get_dataset("clic", "train", args)
         validation_dataset = get_dataset("clic", "validation", args)
     validation_dataset = validation_dataset.take(args.max_validation_steps)
-
-
 
     model.fit(
         train_dataset.prefetch(8),
@@ -530,11 +521,9 @@ def parse_args(argv):
 
     # Parse arguments.
     args = parser.parse_args(argv[1:])
-    #args = parser.parse_args(argv)
     if args.command is None:
         parser.print_usage()
         sys.exit(2)
-    print(args)
     return args
 
 
