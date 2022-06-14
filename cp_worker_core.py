@@ -35,7 +35,8 @@ while True:
 
         hash = hashlib.md5(pathlib.Path(input_file_path).read_bytes()).hexdigest()
         cache_dir = os.path.join(cache_dir_root, hash)
-        if os.path.isdir(cache_dir):
+        # Check the directory exista, and is non-empty (incase it failed last time)
+        if os.path.isdir(cache_dir) and os.listdir(cache_dir):
             # instead of running CP, copy the cached files to the output dir.
             shutil.copytree(cache_dir, output_dir, dirs_exist_ok=True)
             print(f'Done (from cache).', flush=True)
