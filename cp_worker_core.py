@@ -29,7 +29,7 @@ while True:
     os.makedirs(output_dir)
 
     if allow_cache:
-        sys.stderr.write(input_file_uri)
+        #sys.stderr.write(input_file_uri)
         input_file_uri_parsed = urlparse(input_file_uri)
         input_file_path = os.path.abspath(os.path.join(input_file_uri_parsed.netloc, input_file_uri_parsed.path))
 
