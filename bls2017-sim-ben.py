@@ -145,7 +145,7 @@ class BLS2017Model(tf.keras.Model):
             write_png(os.path.join(IMAGE_DIR_RELATIVE, 'original_{}.png'.format(i)), tf.dtypes.cast(x[i, :, :, :], tf.uint8))
             write_png(os.path.join(IMAGE_DIR_RELATIVE, 'decoded_{}.png'.format(i)), tf.saturate_cast(tf.round(x_hat[i, :, :, :]), tf.uint8))
 
-        file_uri_list = list(pathlib.Path('.').absolute().glob(os.path.join(IMAGE_DIR_RELATIVE, '*.png')))
+        file_uri_list = list(pathlib.Path(IMAGE_DIR_RELATIVE).resolve().glob('*.png'))
         time_start_cp = time.time()
         sim = cp_features.cp_features(file_uri_list)
         print(f'cp_features took {time.time() - time_start_cp}s wall time.')
@@ -285,7 +285,8 @@ def check_image_size(image, patchsize):
 
 
 def crop_image(image, patchsize):
-    image = tf.image.random_crop(image, (patchsize, patchsize, 3))
+    seed = (0x00C0, 0xFFEE)
+    image = tf.image.stateless_random_crop(image, (patchsize, patchsize, 3), seed=seed)
     return tf.cast(image, tf.keras.mixed_precision.global_policy().compute_dtype)
 
 
@@ -544,6 +545,7 @@ def main(args):
 
 
 if __name__ == "__main__":
+    start = time.time()
     #print(sys.argv)
     sys.argv = ['foo.py',
                 '-V', 'train',
@@ -552,6 +554,9 @@ if __name__ == "__main__":
                 '--epochs', '10']
 
     app.run(main, flags_parser=parse_args)
+
+    end = time.time()
+    print(f'took {end-start} seconds.')
 
     for proc in cp_features.procs:
         proc.kill()
